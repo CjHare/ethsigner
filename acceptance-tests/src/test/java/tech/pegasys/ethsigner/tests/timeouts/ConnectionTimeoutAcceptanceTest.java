@@ -32,8 +32,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,23 +39,15 @@ import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.utils.Convert;
 import org.web3j.utils.Convert.Unit;
 
-public class TimeoutAcceptanceTest {
-
-  private static final Logger LOG = LogManager.getLogger();
-  private static final int DYNAMICALLY_ASSIGN_PORT = 0;
+public class ConnectionTimeoutAcceptanceTest {
 
   private Signer ethSigner;
-  private ServerSocket unresponsiveSocketA;
-  private ServerSocket unresponsiveSocketB;
 
   @Before
   public void setUp() throws IOException {
-    unresponsiveSocketA = new ServerSocket(DYNAMICALLY_ASSIGN_PORT);
-    unresponsiveSocketB = new ServerSocket(DYNAMICALLY_ASSIGN_PORT);
-
     final NodeConfiguration nodeConfig = new NodeConfigurationBuilder().build();
     final NodePorts nodePorts =
-        new NodePorts(unresponsiveSocketA.getLocalPort(), unresponsiveSocketB.getLocalPort());
+        new NodePorts(new ServerSocket(7007).getLocalPort(), new ServerSocket(7008).getLocalPort());
     final SignerConfiguration signerConfig = new SignerConfigurationBuilder().build();
 
     ethSigner = new Signer(signerConfig, nodeConfig, nodePorts);
@@ -72,19 +62,6 @@ public class TimeoutAcceptanceTest {
     if (ethSigner != null) {
       ethSigner.shutdown();
     }
-
-    close(unresponsiveSocketA);
-    close(unresponsiveSocketB);
-  }
-
-  private void close(final ServerSocket socket) {
-    try {
-      if (!socket.isClosed()) {
-        socket.close();
-      }
-    } catch (final IOException e) {
-      LOG.warn("Problem closing unresponsive socket {}", socket.getInetAddress(), e);
-    }
   }
 
   private Account richBenefactor() {
@@ -92,8 +69,8 @@ public class TimeoutAcceptanceTest {
   }
 
   @Test
-  public void timeoutSubmittingTransactionReturnsAGatewayTimeoutError() throws IOException {
-    final String recipient = "0x1b00ba00ca00bb00aa00bc00be00ac00ca00da00";
+  public void submittingTransactionReturnsAGatewayTimeoutError() throws IOException {
+    final String recipient = "0x1b00ca00ca00ca00aa00ca00be00ac00ca00ca00";
     final BigInteger transferAmountWei = Convert.toWei("15.5", Unit.ETHER).toBigIntegerExact();
 
     final Transaction transaction =
@@ -112,9 +89,8 @@ public class TimeoutAcceptanceTest {
   }
 
   @Test
-  public void timeoutSubmittingTransactionWithoutNonceReturnsAGatewayTimeoutError()
-      throws IOException {
-    final String recipient = "0x1b00ba00ca00bb00aa00bc00be00ac00ca00da00";
+  public void submittingTransactionWithoutNonceReturnsAGatewayTimeoutError() throws IOException {
+    final String recipient = "0x1b00dd00dd00dd00dd00bdd0be00dd00dd00dd00";
     final BigInteger transferAmountWei = Convert.toWei("15.5", Unit.ETHER).toBigIntegerExact();
 
     final Transaction transaction =
